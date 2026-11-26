@@ -177,7 +177,7 @@ export function PeticionDetalle({ peticion, onClose, onCambio }) {
               {contacto.estado === 'error' && <Alert tone="danger">{contacto.error.message}</Alert>}
               {contacto.estado === 'visible' && (
                 <div className="contact">
-                  <Alert tone="warning">Estos datos de contacto son solo para resolver este caso.</Alert>
+                  <Alert tone="warning">{contacto.data.aviso ?? 'Estos datos de contacto son solo para resolver este caso.'}</Alert>
                   <div className="person">
                     <span className="person__icon" aria-hidden="true">
                       <UserRound />
@@ -185,7 +185,8 @@ export function PeticionDetalle({ peticion, onClose, onCambio }) {
                     <div>
                       <p className="person__name">{contacto.data.nombre}</p>
                       <p className="person__meta">
-                        <span className="mono">{contacto.data.matricula}</span> · {contacto.data.programa}
+                        <span className="mono">{contacto.data.matricula}</span>
+                        {contacto.data.programa && <> · {contacto.data.programa}</>}
                       </p>
                       <p className="person__meta">Recibió el objeto el {formatFecha(contacto.data.fechaReclamo)}</p>
                     </div>

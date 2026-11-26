@@ -1,4 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { EVENTO_SESION_EXPIRADA, token } from '../services/http.js';
 
 const KEY = 'univa-op:sesion';
 const SessionContext = createContext(null);
@@ -15,6 +17,7 @@ function leer(clave) {
  * Sesión en dos pasos (PNT-01 → PNT-02):
  *  - `pendiente`: usuario identificado por correo, aún sin confirmar.
  *  - `usuario`: usuario que confirmó sus datos y entró a la plataforma.
+ * Con la API real, el token JWT se recibe en el paso 1 (ver api.http.js) y se borra al salir.
  */
 export function SessionProvider({ children }) {
   const [usuario, setUsuario] = useState(() => leer(KEY));
@@ -22,7 +25,10 @@ export function SessionProvider({ children }) {
 
   const setPendiente = useCallback((u) => {
     if (u) sessionStorage.setItem(`${KEY}:pendiente`, JSON.stringify(u));
-    else sessionStorage.removeItem(`${KEY}:pendiente`);
+    else {
+      sessionStorage.removeItem(`${KEY}:pendiente`);
+      token.borrar(); // «Esta no es mi cuenta»: el token pertenece a la cuenta descartada.
+    }
     setPendienteState(u);
   }, []);
 
@@ -39,9 +45,21 @@ export function SessionProvider({ children }) {
   const cerrarSesion = useCallback(() => {
     sessionStorage.removeItem(KEY);
     sessionStorage.removeItem(`${KEY}:pendiente`);
+    token.borrar();
     setUsuario(null);
     setPendienteState(null);
   }, []);
+
+  // La API respondió 401 (token vencido o inválido): se vuelve a PNT-01.
+  useEffect(() => {
+    const alExpirar = (e) => {
+      if (!sessionStorage.getItem(KEY)) return;
+      cerrarSesion();
+      toast.error('Tu sesión expiró', { description: e.detail || 'Identifícate de nuevo para continuar.' });
+    };
+    window.addEventListener(EVENTO_SESION_EXPIRADA, alExpirar);
+    return () => window.removeEventListener(EVENTO_SESION_EXPIRADA, alExpirar);
+  }, [cerrarSesion]);
 
   const value = useMemo(
     () => ({ usuario, pendiente, setPendiente, confirmar, cerrarSesion }),

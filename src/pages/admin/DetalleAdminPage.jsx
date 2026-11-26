@@ -120,7 +120,8 @@ export function DetalleAdminPage({ soloLectura = false }) {
             <div>
               <p className="person__name">{o.reclamante.nombre}</p>
               <p className="person__meta">
-                <span className="mono">{o.reclamante.matricula}</span> · {o.reclamante.programa}
+                <span className="mono">{o.reclamante.matricula}</span>
+                {o.reclamante.programa && <> · {o.reclamante.programa}</>}
               </p>
               <p className="person__meta">Reclamado el {formatFecha(o.fechaReclamo)}</p>
             </div>
