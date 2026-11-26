@@ -1,26 +1,34 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { catalogosApi } from '../services/api.js';
+import { catalogosApi, MODO_DEMO } from '../services/api.js';
+import { useSession } from './SessionContext.jsx';
 
 const CatalogosContext = createContext(null);
 
 const vacio = { tiposObjeto: [], colores: [], etiquetas: [], modulos: [] };
 
-/** Carga los catálogos una sola vez y expone búsquedas por id. */
+/**
+ * Carga los catálogos y expone búsquedas por id.
+ * Con la API real los catálogos requieren token, así que se cargan al entrar a la plataforma
+ * (y de nuevo si cambia el usuario); en modo demostración, una sola vez al iniciar.
+ */
 export function CatalogosProvider({ children }) {
+  const { usuario } = useSession();
   const [data, setData] = useState(vacio);
   const [listo, setListo] = useState(false);
   const [error, setError] = useState(null);
+  const clave = MODO_DEMO ? 'demo' : (usuario?.id ?? null);
 
   useEffect(() => {
+    if (clave === null) return undefined;
     let vivo = true;
     catalogosApi
       .todos()
-      .then((c) => vivo && (setData(c), setListo(true)))
+      .then((c) => vivo && (setData(c), setError(null), setListo(true)))
       .catch((e) => vivo && setError(e));
     return () => {
       vivo = false;
     };
-  }, []);
+  }, [clave]);
 
   const value = useMemo(() => {
     const porId = (lista) => new Map(lista.map((x) => [x.id, x]));
